@@ -1,60 +1,65 @@
+#include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <time.h>
 
-#define DBG_CHKP { printf("DBG_CHKP: %s %d\n", __func__, __LINE__); }
+#define DEBUG
+#define DBG_CHKP \
+    { printf("DBG_CHKP: %s %d\n", __func__, __LINE__); }
 
 #include "include/lab1_ex3_lib.h"
-// NOTE: vtype, itype and CSR struct are defined in the header file 'include/lab1_ex3_lib.h'
+// NOTE: vtype, itype and CSR struct are defined in the header file
+// 'include/lab1_ex3_lib.h'
 
 // -------- uncomment these two lines when solutions are published --------
 // #include "../../solutions/lab1_sol.cu"
 // #define RESULTS
 // ------------------------------------------------------------------------
 
-CSR* random_CSR (int n, int m) {
+CSR* random_CSR(int n, int m) {
     time_t t;
-    srand((unsigned) time(&t));
+    srand((unsigned)time(&t));
 
 #ifdef DEBUG
     printf("============= random generation printing =============\n");
 #endif
 
     CSR* A = (CSR*)malloc(sizeof(CSR));
-    A->n = n; A->m = m;
-    A->row = (itype*)malloc(sizeof(itype)*(n+1));
+    A->n = n;
+    A->m = m;
+    A->row = (itype*)malloc(sizeof(itype) * (n + 1));
     A->row[0] = 0;
 
     int row_nnz, nnz = 0, rand_extraction;
-    for (int i=0; i<n; i++) {
-
+    for (int i = 0; i < n; i++) {
         row_nnz = 1;
         rand_extraction = rand();
-        while ((RAND_MAX/(1<<row_nnz) > rand_extraction) && (row_nnz<m-1) )
-            row_nnz ++;
+        while ((RAND_MAX / (1 << row_nnz) > rand_extraction) &&
+               (row_nnz < m - 1))
+            row_nnz++;
 #ifdef DEBUG
         printf("row_nnz[%d] = %d\n", i, row_nnz);
 #endif
 
-        A->row[i+1] = A->row[i] + row_nnz;
+        A->row[i + 1] = A->row[i] + row_nnz;
         nnz += row_nnz;
     }
     A->nnz = nnz;
 
-    A->col = (itype*)malloc(sizeof(itype)*(nnz));
-    A->val = (vtype*)malloc(sizeof(vtype)*(nnz));
+    A->col = (itype*)malloc(sizeof(itype) * (nnz));
+    A->val = (vtype*)malloc(sizeof(vtype) * (nnz));
     int tmp, k;
-    for (int i=0; i<n; i++) {
+    for (int i = 0; i < n; i++) {
 #ifdef DEBUG
         printf("----------------- row %2d generation ------------------\n", i);
 #endif
 
-        for (int j=0; j<(A->row[i+1]-A->row[i]); j++) {
-            A->val[A->row[i] + j] = (double)rand()/((double)(RAND_MAX/5));
-            rand_extraction = (m-j!=0) ? rand() % (m-j) : 0 ;
+        for (int j = 0; j < (A->row[i + 1] - A->row[i]); j++) {
+            A->val[A->row[i] + j] = (double)rand() / ((double)(RAND_MAX / 5));
+            rand_extraction = (m - j != 0) ? rand() % (m - j) : 0;
 
-            for (k=0; k<j; k++) {
+            for (k = 0; k < j; k++) {
                 if (A->col[A->row[i] + k] <= rand_extraction) {
                     rand_extraction++;
                 } else {
@@ -66,21 +71,20 @@ CSR* random_CSR (int n, int m) {
             printf("rand_extraction = %d\n", rand_extraction);
 #endif
 
-            if (k<j) {
-
+            if (k < j) {
 #ifdef DEBUG
                 printf("k = %d, j = %d\n", k, j);
-                for (int z=A->row[i]; z<A->row[i+1]; z++)
+                for (int z = A->row[i]; z < A->row[i + 1]; z++)
                     printf("%d ", A->col[z]);
                 printf("\n");
 #endif
 
-                for (int h=j; h>k; h--) {
-                    A->col[A->row[i] + h] = A->col[A->row[i] + h -1];
+                for (int h = j; h > k; h--) {
+                    A->col[A->row[i] + h] = A->col[A->row[i] + h - 1];
                 }
 
 #ifdef DEBUG
-                for (int z=A->row[i]; z<A->row[i+1]; z++)
+                for (int z = A->row[i]; z < A->row[i + 1]; z++)
                     printf("%d ", A->col[z]);
                 printf("\n");
 #endif
@@ -90,7 +94,7 @@ CSR* random_CSR (int n, int m) {
 
 #ifdef DEBUG
             printf("A[%d]: ", i);
-            for (int z=A->row[i]; z<A->row[i+1]; z++)
+            for (int z = A->row[i]; z < A->row[i + 1]; z++)
                 printf("%d ", A->col[z]);
             printf("\n");
 #endif
@@ -102,17 +106,16 @@ CSR* random_CSR (int n, int m) {
     printf("======================================================\n\n");
 #endif
 
-    return(A);
+    return (A);
 }
 
-int compare_CSR (CSR* A, CSR* B) {
-    if (A == NULL || B == NULL)
-        return(0);
+int compare_CSR(CSR* A, CSR* B) {
+    if (A == NULL || B == NULL) return (0);
 
     int result = 1;
     if ((A->n == B->n) && (A->m == B->m) && (A->nnz == B->nnz)) {
         if (result) {
-            if (memcmp(A->row, B->row, sizeof(itype) * (A->n +1)) != 0)
+            if (memcmp(A->row, B->row, sizeof(itype) * (A->n + 1)) != 0)
                 result = 0;
             if (result) {
                 if (memcmp(A->col, B->col, sizeof(itype) * (A->nnz)) != 0)
@@ -126,12 +129,10 @@ int compare_CSR (CSR* A, CSR* B) {
         result = 0;
     }
 
-    return(result);
+    return (result);
 }
 
-
-
-void free_CSR (CSR** A) {
+void free_CSR(CSR** A) {
     if ((*A) != NULL) {
         free((*A)->row);
         free((*A)->col);
@@ -141,29 +142,25 @@ void free_CSR (CSR** A) {
     }
 }
 
-void print_CSR (CSR* A, const char* Aname) {
+void print_CSR(CSR* A, const char* Aname) {
     printf("Sparse matrix %s:\n", Aname);
     printf("A->n = %d\n", A->n);
     printf("A->m = %d\n", A->m);
     printf("A->nnz = %d\n", A->nnz);
     printf("Rows: ");
-    for (int i=0; i<(A->n+1); i++)
-        printf("%3d ", A->row[i]);
+    for (int i = 0; i < (A->n + 1); i++) printf("%3d ", A->row[i]);
     printf("\n");
     printf("Cols: ");
-    for (int i=0; i<A->nnz; i++)
-        printf("%3d ", A->col[i]);
+    for (int i = 0; i < A->nnz; i++) printf("%3d ", A->col[i]);
     printf("\n");
     printf("Vals: ");
-    for (int i=0; i<A->nnz; i++)
-        printf("%3.2f ", A->val[i]);
+    for (int i = 0; i < A->nnz; i++) printf("%3.2f ", A->val[i]);
     printf("\n\n");
 }
 
-void print_DN (vtype* A, int n, int m) {
-    for (int i=0; i<n; i++) {
-        for (int j=0; j<m; j++)
-            printf("%3.2f ", A[i*m + j]);
+void print_DN(vtype* A, int n, int m) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) printf("%3.2f ", A[i * m + j]);
         printf("\n");
     }
     printf("\n");
@@ -171,44 +168,99 @@ void print_DN (vtype* A, int n, int m) {
     return;
 }
 
-int main (int argc, char *argv[]) {
+void densification(CSR* csr, vtype** dn) {
+    int n = csr->n;
+    int m = csr->m;
+    *dn = (vtype*)malloc(sizeof(vtype) * n * m);
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < m; j++) {
+            (*dn)[i * m + j] = 0;
+        }
+    }
 
+    for (size_t i = 0; i < n; i++)  // safe because row is lenght n+1
+    {
+        itype row_start = csr->row[i];
+        itype row_end = csr->row[i + 1];
+
+        for (size_t j = row_start; j < row_end; j++) {
+            (*dn)[i * m + csr->col[j]] = csr->val[j];
+        }
+    }
+}
+
+void sparsification(vtype* dn, CSR** csr, int n, int m) {
+    int nnz = 0;
+    *csr = (CSR*)malloc(sizeof(CSR));
+    (*csr)->n = n;
+    (*csr)->m = m;
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < m; j++) {
+            if (dn[i * m + j] != 0.0) {
+                nnz++;
+            }
+        }
+    }
+    (*csr)->nnz = nnz;
+    (*csr)->col = (itype*)malloc(sizeof(itype) * nnz);
+    (*csr)->val = (vtype*)malloc(sizeof(vtype) * nnz);
+    (*csr)->row = (itype*)malloc(sizeof(itype) * (n + 1));
+    int k = 0;
+    (*csr)->row[0] = 0;
+    int  nnz_so_far = 0;
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < m; j++) {
+            if (dn[i * m + j] != 0.0) {
+                (*csr)->col[k] = j;
+                (*csr)->val[k] = dn[i * m + j];
+                nnz_so_far++;
+                k++;
+            }
+        }
+        (*csr)->row[i + 1] = nnz_so_far;
+    }
+}
+
+int main(int argc, char* argv[]) {
     if (argc < 3) {
         printf("Usage: lab1_ex2 n m\n");
-        return(1);
+        return (1);
     }
 
     printf("argv[1] = %s, argv[2] = %s\n", argv[1], argv[2]);
 
     int n = atoi(argv[1]), m = atoi(argv[2]);
 
-    CSR* A = random_CSR(n,m);
+    CSR* A = random_CSR(n, m);
 
     print_CSR(A, "A");
 
-    vtype* dn_A = NULL;  // Put here the result of your densification function over A
-    CSR* ck_A = NULL;    // Put here the result of your sparsification function over dn_A
+    vtype* dn_A =
+        NULL;  // Put here the result of your densification function over A
+    CSR* ck_A =
+        NULL;  // Put here the result of your sparsification function over dn_A
 
 #ifdef RESULTS
     EX3_SOLUTION
 #else
-        /* |========================================| */
-        /* |           Put here your code           | */
-        /* |========================================| */
+    densification(A, &dn_A);
+    printf("Densification of A:\n");
+    print_DN(dn_A, n, m);
 
-
+    sparsification(dn_A, &ck_A, n, m);
+    print_CSR(ck_A, "ck_A");
 
 #endif
 
     int test = compare_CSR(A, ck_A);
-    char* test_result = (test == 1) ? "\x1B[32mDONE!\x1B[37m" : "\x1B[31mERROR!\x1B[37m";
-    printf("\nINVERSE TEST (|sparsification(densification(A)) == A ?): \t %s\n", test_result);
+    char* test_result =
+        (test == 1) ? "\x1B[32mDONE!\x1B[37m" : "\x1B[31mERROR!\x1B[37m";
+    printf("\nINVERSE TEST (|sparsification(densification(A)) == A ?): \t %s\n",
+           test_result);
 
     free_CSR(&ck_A);
     free_CSR(&A);
-    if (dn_A != NULL)
-        free(dn_A);
+    if (dn_A != NULL) free(dn_A);
 
-    return(0);
-
+    return (0);
 }
